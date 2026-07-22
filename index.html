@@ -31,7 +31,14 @@
       </div>
       <div id="header-actions" class="header-actions hidden">
         <button type="button" id="btn-reload" class="btn btn-ghost">Reload from GitHub</button>
-        <button type="button" id="btn-save" class="btn btn-primary" disabled>Save changes</button>
+        <div class="save-cluster">
+          <p id="save-reminder" class="save-reminder" aria-live="polite">
+            Nie zapomnij zapisać zmian na GitHubie!
+          </p>
+          <button type="button" id="btn-save" class="btn btn-primary btn-save-huge" disabled>
+            SAVE CHANGES
+          </button>
+        </div>
         <button type="button" id="btn-export" class="btn btn-ghost">Export backup</button>
         <label class="btn btn-ghost file-btn">
           Import backup
@@ -93,6 +100,16 @@
 
       <!-- Dashboard (hidden until connected) -->
       <div id="dashboard" class="dashboard hidden">
+        <section id="save-callout" class="save-callout" aria-label="Save reminder">
+          <p class="save-callout-note">
+            Zmiany są tylko lokalne, dopóki nie zapiszesz.
+            <strong>Nie zapomnij kliknąć SAVE CHANGES!</strong>
+          </p>
+          <button type="button" id="btn-save-main" class="btn btn-primary btn-save-huge" disabled>
+            SAVE CHANGES
+          </button>
+        </section>
+
         <section class="panel status-panel" aria-label="Connection status">
           <div class="status-grid">
             <div>

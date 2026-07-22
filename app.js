@@ -74,6 +74,9 @@ function cacheElements() {
   els.tableEmpty = $("table-empty");
   els.btnReload = $("btn-reload");
   els.btnSave = $("btn-save");
+  els.btnSaveMain = $("btn-save-main");
+  els.saveReminder = $("save-reminder");
+  els.saveCallout = $("save-callout");
   els.btnExport = $("btn-export");
   els.inputImport = $("input-import");
   els.btnDisconnect = $("btn-disconnect");
@@ -178,7 +181,9 @@ function readConnectionForm() {
 function updateOfflineUI() {
   appState.offline = !navigator.onLine;
   els.offlineBanner.classList.toggle("hidden", !appState.offline);
-  els.btnSave.disabled = appState.offline || !dataStore.isDirty() || !githubApi.isConnected();
+  const saveDisabled = appState.offline || !dataStore.isDirty() || !githubApi.isConnected();
+  els.btnSave.disabled = saveDisabled;
+  if (els.btnSaveMain) els.btnSaveMain.disabled = saveDisabled;
   els.btnReload.disabled = appState.offline || !githubApi.isConnected();
 }
 
@@ -201,7 +206,19 @@ function updateStatusPanel() {
     els.statusDirty.classList.remove("status-dirty");
   }
 
-  els.btnSave.disabled = appState.offline || !dataStore.isDirty();
+  const dirty = dataStore.isDirty();
+  const saveDisabled = appState.offline || !dirty;
+  els.btnSave.disabled = saveDisabled;
+  if (els.btnSaveMain) els.btnSaveMain.disabled = saveDisabled;
+
+  const saveCluster = els.btnSave.closest(".save-cluster");
+  if (saveCluster) saveCluster.classList.toggle("is-dirty", dirty);
+  if (els.saveCallout) els.saveCallout.classList.toggle("is-dirty", dirty);
+  if (els.saveReminder) {
+    els.saveReminder.textContent = dirty
+      ? "Masz niezapisane zmiany — kliknij SAVE CHANGES!"
+      : "Nie zapomnij zapisać zmian na GitHubie!";
+  }
 }
 
 function updateStats() {
@@ -577,6 +594,7 @@ function bindEvents() {
   els.btnDisconnect.addEventListener("click", handleDisconnect);
   els.btnReload.addEventListener("click", () => handleReload());
   els.btnSave.addEventListener("click", handleSave);
+  if (els.btnSaveMain) els.btnSaveMain.addEventListener("click", handleSave);
   els.btnExport.addEventListener("click", handleExport);
   els.inputImport.addEventListener("change", handleImport);
   els.enrollmentForm.addEventListener("submit", handleEnrollmentSubmit);
