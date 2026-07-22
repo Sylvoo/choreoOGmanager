@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' data:; style-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self';"
+    />
+    <meta name="theme-color" content="#1a1f24" />
+    <meta name="description" content="Manage dance class enrollments with GitHub JSON storage." />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Choreo OG Manager</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div id="offline-banner" class="banner banner-offline hidden" role="status">
+      You are offline. GitHub load and save are disabled. Unsaved local edits are kept for this session.
+    </div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <header class="site-header">
+      <div class="brand-block">
+        <p class="brand">Choreo OG Manager</p>
+        <p class="tagline">Dance class enrollments</p>
+      </div>
+      <div id="header-actions" class="header-actions hidden">
+        <button type="button" id="btn-reload" class="btn btn-ghost">Reload from GitHub</button>
+        <button type="button" id="btn-save" class="btn btn-primary" disabled>Save changes</button>
+        <button type="button" id="btn-export" class="btn btn-ghost">Export backup</button>
+        <label class="btn btn-ghost file-btn">
+          Import backup
+          <input type="file" id="input-import" accept="application/json,.json" hidden />
+        </label>
+        <button type="button" id="btn-disconnect" class="btn btn-danger">Disconnect</button>
+      </div>
+    </header>
+
+    <main id="main" class="main">
+      <!-- Connection screen -->
+      <section id="connection-panel" class="panel connection-panel" aria-labelledby="connection-title">
+        <h1 id="connection-title">Connect to GitHub</h1>
+        <p class="panel-lead">
+          Enter a fine-grained personal access token with Contents read and write on your data repository.
+          The token stays in memory (or this browser session if you choose) and is never stored in the app files.
+        </p>
+
+        <form id="connection-form" class="form grid-form" autocomplete="off">
+          <label>
+            <span>GitHub repository owner</span>
+            <input type="text" id="conn-owner" name="owner" required autocomplete="off" />
+          </label>
+          <label>
+            <span>Repository name</span>
+            <input type="text" id="conn-repo" name="repository" required autocomplete="off" />
+          </label>
+          <label>
+            <span>Branch name</span>
+            <input type="text" id="conn-branch" name="branch" required autocomplete="off" />
+          </label>
+          <label>
+            <span>Path to JSON file</span>
+            <input type="text" id="conn-path" name="filePath" required autocomplete="off" />
+          </label>
+          <label class="full-width">
+            <span>GitHub access token</span>
+            <input
+              type="password"
+              id="conn-token"
+              name="token"
+              required
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+          <label class="checkbox-label full-width">
+            <input type="checkbox" id="conn-remember" name="remember" />
+            <span>Remember token for this browser session</span>
+          </label>
+          <div class="form-actions full-width">
+            <button type="submit" id="btn-connect" class="btn btn-primary">Connect</button>
+            <button type="button" id="btn-test" class="btn btn-ghost">Test connection</button>
+            <button type="button" id="btn-disconnect-conn" class="btn btn-ghost">Disconnect</button>
+          </div>
+        </form>
+        <p id="connection-message" class="form-message" role="status"></p>
+      </section>
+
+      <!-- Dashboard (hidden until connected) -->
+      <div id="dashboard" class="dashboard hidden">
+        <section class="panel status-panel" aria-label="Connection status">
+          <div class="status-grid">
+            <div>
+              <span class="status-label">Repository</span>
+              <span id="status-repo" class="status-value"></span>
+            </div>
+            <div>
+              <span class="status-label">Branch</span>
+              <span id="status-branch" class="status-value"></span>
+            </div>
+            <div>
+              <span class="status-label">JSON path</span>
+              <span id="status-path" class="status-value"></span>
+            </div>
+            <div>
+              <span class="status-label">Last loaded</span>
+              <span id="status-loaded" class="status-value">—</span>
+            </div>
+            <div>
+              <span class="status-label">Last saved</span>
+              <span id="status-saved" class="status-value">—</span>
+            </div>
+            <div>
+              <span class="status-label">Changes</span>
+              <span id="status-dirty" class="status-value status-clean">Saved</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel stats-panel" aria-labelledby="stats-title">
+          <h2 id="stats-title">Dashboard</h2>
+          <div class="stats-grid">
+            <div class="stat">
+              <span class="stat-value" id="stat-total">0</span>
+              <span class="stat-label">Total enrollments</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-paid">0</span>
+              <span class="stat-label">Paid</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-unpaid">0</span>
+              <span class="stat-label">Unpaid</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-people">0</span>
+              <span class="stat-label">Unique people</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-upcoming">0</span>
+              <span class="stat-label">Upcoming classes</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel form-panel" aria-labelledby="form-title">
+          <h2 id="form-title">Add enrollment</h2>
+          <form id="enrollment-form" class="form grid-form" novalidate>
+            <input type="hidden" id="enroll-id" value="" />
+            <label>
+              <span>First name</span>
+              <input type="text" id="enroll-first" name="firstName" required autocomplete="given-name" />
+              <span class="field-error" id="error-firstName"></span>
+            </label>
+            <label>
+              <span>Last name</span>
+              <input type="text" id="enroll-last" name="lastName" required autocomplete="family-name" />
+              <span class="field-error" id="error-lastName"></span>
+            </label>
+            <label>
+              <span>Email</span>
+              <input type="email" id="enroll-email" name="email" required autocomplete="email" />
+              <span class="field-error" id="error-email"></span>
+            </label>
+            <label>
+              <span>Class type</span>
+              <select id="enroll-type" name="classType" required></select>
+              <span class="field-error" id="error-classType"></span>
+            </label>
+            <label>
+              <span>Class date</span>
+              <input type="date" id="enroll-date" name="classDate" required />
+              <span class="field-error" id="error-classDate"></span>
+            </label>
+            <label class="checkbox-label align-end">
+              <input type="checkbox" id="enroll-paid" name="paid" />
+              <span>Paid</span>
+            </label>
+            <div class="form-actions full-width">
+              <button type="submit" id="btn-enroll-submit" class="btn btn-primary">Add enrollment</button>
+              <button type="button" id="btn-enroll-cancel" class="btn btn-ghost hidden">Cancel edit</button>
+            </div>
+            <p id="enroll-message" class="form-message full-width" role="status"></p>
+          </form>
+        </section>
+
+        <section class="panel filters-panel" aria-labelledby="filters-title">
+          <h2 id="filters-title">Search and filters</h2>
+          <form id="filters-form" class="form grid-form filters-form">
+            <label>
+              <span>First name</span>
+              <input type="search" id="filter-first" autocomplete="off" />
+            </label>
+            <label>
+              <span>Last name</span>
+              <input type="search" id="filter-last" autocomplete="off" />
+            </label>
+            <label>
+              <span>Email</span>
+              <input type="search" id="filter-email" autocomplete="off" />
+            </label>
+            <label>
+              <span>Class type</span>
+              <select id="filter-type">
+                <option value="">All types</option>
+              </select>
+            </label>
+            <label>
+              <span>Class date</span>
+              <input type="date" id="filter-date" />
+            </label>
+            <label>
+              <span>Payment</span>
+              <select id="filter-paid">
+                <option value="">All</option>
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
+              </select>
+            </label>
+            <div class="form-actions full-width">
+              <button type="button" id="btn-clear-filters" class="btn btn-ghost">Clear filters</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel table-panel" aria-labelledby="table-title">
+          <div class="table-header">
+            <h2 id="table-title">Enrollments</h2>
+            <p id="table-count" class="table-count"></p>
+          </div>
+          <div class="table-wrap">
+            <table class="enrollments-table">
+              <thead>
+                <tr>
+                  <th scope="col">Class date</th>
+                  <th scope="col">Class type</th>
+                  <th scope="col">First name</th>
+                  <th scope="col">Last name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Payment</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="enrollments-body"></tbody>
+            </table>
+          </div>
+          <p id="table-empty" class="empty-state hidden">No enrollments match the current filters.</p>
+        </section>
+      </div>
+    </main>
+
+    <!-- Conflict modal -->
+    <div id="conflict-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="conflict-title">
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card">
+        <h2 id="conflict-title">Database changed</h2>
+        <p id="conflict-message">
+          The database was changed on another device. Reload the latest version before saving.
+        </p>
+        <div class="form-actions">
+          <button type="button" id="btn-conflict-reload" class="btn btn-primary">Reload data</button>
+          <button type="button" id="btn-conflict-cancel" class="btn btn-ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

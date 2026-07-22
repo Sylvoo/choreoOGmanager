@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-22T18:00:00.000Z",
+  "enrollments": [
+    {
+      "id": "7c249ff9-6676-4535-b3df-dcf9826785bd",
+      "personId": "8a8d8b60e8fb4053a4bd11b660133495bc32ebea738e5649d984d0cd1af37093",
+      "firstName": "Anna",
+      "lastName": "Nowak",
+      "email": "anna@example.com",
+      "classType": "Hip-hop",
+      "classDate": "2026-07-22",
+      "paid": false,
+      "createdAt": "2026-07-22T17:50:00.000Z",
+      "updatedAt": "2026-07-22T17:50:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "personId": "7d78580b51d6ce3c335bcc751cc85cc3108e17c48c0884da304c800a2cb43d87",
+      "firstName": "Jan",
+      "lastName": "Kowalski",
+      "email": "jan@example.com",
+      "classType": "Commercial",
+      "classDate": "2026-07-25",
+      "paid": true,
+      "createdAt": "2026-07-22T17:55:00.000Z",
+      "updatedAt": "2026-07-22T17:55:00.000Z"
+    }
+  ]
+}
