@@ -12,6 +12,9 @@ const appState = {
   lastSavedAt: null,
   editingId: null,
   offline: !navigator.onLine,
+  /** Remembered after each successful add/edit so the next add keeps class context. */
+  lastClassType: "",
+  lastClassDate: "",
 };
 
 const els = {};
@@ -320,7 +323,7 @@ function startEdit(enrollment) {
   els.enrollmentForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function resetEnrollmentForm() {
+function resetEnrollmentForm({ keepMessage = false } = {}) {
   appState.editingId = null;
   els.enrollmentForm.reset();
   els.enrollId.value = "";
@@ -328,7 +331,15 @@ function resetEnrollmentForm() {
   els.btnEnrollSubmit.textContent = "Add enrollment";
   els.btnEnrollCancel.classList.add("hidden");
   clearFieldErrors();
-  setEnrollMessage("");
+  if (!keepMessage) setEnrollMessage("");
+
+  // Keep last chosen class type and date for quick consecutive enrollments.
+  if (appState.lastClassType) {
+    els.enrollType.value = appState.lastClassType;
+  }
+  if (appState.lastClassDate) {
+    els.enrollDate.value = appState.lastClassDate;
+  }
 }
 
 async function togglePaid(id, paid) {
@@ -517,7 +528,9 @@ async function handleEnrollmentSubmit(event) {
     return;
   }
 
-  resetEnrollmentForm();
+  appState.lastClassType = formValues.classType;
+  appState.lastClassDate = formValues.classDate;
+  resetEnrollmentForm({ keepMessage: true });
   refreshDashboard();
   setEnrollMessage(editingId ? "Enrollment updated." : "Enrollment added.", "success");
 }
